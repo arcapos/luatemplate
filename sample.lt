@@ -1,0 +1,13 @@
+<html>
+<head>
+	<% if title == nil then title = 'title not set' end %>
+
+	<% if a == nil then %>A NOT SET<% end %>
+	<title><%= title %></title>
+</head>
+<body>
+<% for n = 1, 10 do %>
+This is line <%= n %> : <%=%20d n %><br/>
+<% end %>
+</body>
+</html>

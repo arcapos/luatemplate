@@ -1,0 +1,5 @@
+</body>
+
+<% print('hello') %>
+
+</html>

@@ -1,0 +1,7 @@
+<html>
+<head>
+	<title><%! block title %>Sample Document<%! endblock %></title>
+</head>
+<body>
+<%! block content %>Content goes here<%! endblock %>
+</body>

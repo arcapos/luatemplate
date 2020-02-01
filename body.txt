@@ -1,0 +1,6 @@
+<%! include head.txt %>
+
+THIS IS THE BODY
+
+<%! include foot.txt %>
+

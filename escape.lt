@@ -1,0 +1,37 @@
+Demonstrating various escapings.
+
+<% local text = '<a>a_link:to_a_link</a>' %>
+
+No escaping:
+<%= text %>
+
+
+<%!escape latex %>
+LaTeX escaping:
+<%= text %>
+
+<%!escape url %>
+URL escaping:
+<%= text %>
+
+<%!escape html %>
+HTML escaping:
+<%= text %>
+
+<%!escape none %>
+No escaping again:
+<%= text %>
+
+one time LaTeX escaping:
+<%=latex text %>
+
+one time URL escaping:
+<%=url text %>
+
+one time HTML escaping:
+<%=html text %>
+
+No escaping again:
+<%!escape html %>
+<%=none text %>
+

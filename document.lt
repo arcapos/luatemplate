@@ -1,0 +1,7 @@
+<%! extends header.lt %>
+
+<%! block title %>This is the title<%! endblock %>
+
+<%! block content %>
+My content for <%= title %>.
+<%! endblock %>
