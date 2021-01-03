@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2018 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
+ * Copyright (C) 2011 - 2021 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -51,14 +51,6 @@ enum lt_states {
 	s_instruction,
 	s_terminate,
 	s_error
-};
-
-enum lt_escapes {
-	e_none = 0,
-	e_html,
-	e_xml,
-	e_latex,
-	e_url
 };
 
 struct lt_escape_entity {
@@ -417,7 +409,7 @@ reader(lua_State *L, char *p, struct lt_state *s,
     struct lt_include_head *includes, const char *template, int print)
 {
 	struct lt_include *include;
-	int exists, n, escape, local, state, extends, block, output, fmt;
+	int exists, n, escape, local, state, extends, block, output, cb;
 	char fnam[MAXPATHLEN];
 	struct luaL_Buffer body, blocks, *b;
 
@@ -444,7 +436,7 @@ reader(lua_State *L, char *p, struct lt_state *s,
 	extends = 0;
 	block = 0;
 	output = 0;
-	fmt = 0;
+	cb = 0;	/* closing braces */
 
 	while (*p) {
 #ifdef LT_DEBUG
@@ -508,27 +500,31 @@ reader(lua_State *L, char *p, struct lt_state *s,
 					}
 					switch (escape_temp) {
 					case e_html:
-						luaL_addstring(b, "lt.html(");
+						luaL_addstring(b, "print(escape_html(");
+						cb += 1;
 						break;
 					case e_xml:
-						luaL_addstring(b, "lt.xml(");
+						luaL_addstring(b, "print(escape_xml(");
+						cb += 1;
 						break;
 					case e_url:
-						luaL_addstring(b, "lt.url(");
+						luaL_addstring(b, "print(escape_url(");
+						cb += 1;
 						break;
 					case e_latex:
-						luaL_addstring(b, "lt.latex(");
+						luaL_addstring(b, "print(escape_latex(");
+						cb += 1;
 						break;
 					default:
 						luaL_addstring(b, "print(");
 					}
 					if (*p == '%') {	/* format */
 						luaL_addstring(b,
-						    "string.format('");
+						    "string.format([[");
 						while (*p && !isspace((int)*p))
 						    	luaL_addchar(b, *p++);
-						luaL_addstring(b, "', ");
-						fmt = 1;
+						luaL_addstring(b, "]], ");
+						cb += 1;
 					}
 				} else if (*p == '!') {	/* instr. */
 					state = s_instruction;
@@ -559,11 +555,9 @@ reader(lua_State *L, char *p, struct lt_state *s,
 				luaL_addchar(b, *p++);
 			else {
 				state = s_initial;
-				if (fmt) {
-					luaL_addstring(b, "))\n");
-					fmt = 0;
-				} else
-					luaL_addstring(b, ")\n");
+				for (; cb > 0; cb--)
+					luaL_addchar(b, ')');
+				luaL_addstring(b, ")\n");
 				p += 2;
 #ifdef LT_DEBUG
 				s->lline++;

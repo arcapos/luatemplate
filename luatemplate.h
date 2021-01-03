@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2020 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
+ * Copyright (C) 2011 - 2021 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -29,6 +29,14 @@
 #endif
 
 #define	TEMPLATE_CONTEXT_METATABLE	"Lua template rendering context"
+
+enum lt_escapes {
+	e_none = 0,
+	e_html,
+	e_xml,
+	e_latex,
+	e_url
+};
 
 struct lt_state {
 #ifdef LT_DEBUG

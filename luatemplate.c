@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2011 - 2020 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
+* Copyright (C) 2011 - 2021 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -39,6 +39,51 @@
 
 #include "luatemplate.h"
 
+static int
+escape(lua_State *L, int escape)
+{
+	luaL_Buffer b;
+	const char *s, *e;
+
+	s = luaL_checkstring(L, -1);
+
+	luaL_buffinit(L, &b);
+
+	for (; *s; s++) {
+		e = lt_escape(escape, *s);
+		if (e != NULL)
+			luaL_addstring(&b, e);
+		else
+			luaL_addchar(&b, *s);
+	}
+	luaL_pushresult(&b);
+	return 1;
+}
+
+static int
+escape_html(lua_State *L)
+{
+	return escape(L, e_html);
+}
+
+static int
+escape_xml(lua_State *L)
+{
+	return escape(L, e_xml);
+}
+
+static int
+escape_latex(lua_State *L)
+{
+	return escape(L, e_latex);
+}
+
+static int
+escape_url(lua_State *L)
+{
+	return escape(L, e_url);
+}
+
 static char *render_block =
 "	local env, t, b = ...\n"
 "	while t ~= nil and template[t].blk[b] == nil do\n"
@@ -59,6 +104,10 @@ static char *render_template =
 "	env.string = string\n"
 "	env.render_block = render_block\n"
 "	env.render_template = render_template\n"
+"	env.escape_html = escape_html\n"
+"	env.escape_xml = escape_xml\n"
+"	env.escape_url = escape_url\n"
+"	env.escape_latex = escape_latex\n"
 "	template[n].main(env, tn)\n";
 
 static int
@@ -66,6 +115,13 @@ template_context(lua_State *L)
 {
 	struct render_context *ctx;
 	int setup, print, finish;
+	struct luaL_Reg lt_escapes[] = {
+		{ "escape_html",	escape_html },
+		{ "escape_xml",		escape_xml },
+		{ "escape_url",		escape_url },
+		{ "escape_latex",	escape_latex },
+		{ NULL, NULL }
+	};
 
 	ctx = lua_newuserdata(L, sizeof(struct render_context));
 	luaL_setmetatable(L, TEMPLATE_CONTEXT_METATABLE);
@@ -73,6 +129,7 @@ template_context(lua_State *L)
 
 	/* The container for everything */
 	lua_newtable(L);
+	luaL_setfuncs(L, lt_escapes, 0);
 
 	/* A place to store templates, initially empty */
 	lua_newtable(L);
@@ -236,14 +293,14 @@ luaopen_template(lua_State *L)
 	lua_pop(L, 1);
 
 	lua_pushliteral(L, "_COPYRIGHT");
-	lua_pushliteral(L, "Copyright (C) 2016 - 2020 "
+	lua_pushliteral(L, "Copyright (C) 2016 - 2021 "
 	    "micro systems marc balmer");
 	lua_settable(L, -3);
 	lua_pushliteral(L, "_DESCRIPTION");
 	lua_pushliteral(L, "Lua Templates");
 	lua_settable(L, -3);
 	lua_pushliteral(L, "_VERSION");
-	lua_pushliteral(L, "template 1.1.0");
+	lua_pushliteral(L, "template 1.2.0");
 	lua_settable(L, -3);
 
 	return 1;
