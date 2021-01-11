@@ -40,6 +40,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 
+#include "buffer.h"
 #include "luatemplate.h"
 
 enum lt_states {
@@ -411,20 +412,20 @@ reader(lua_State *L, char *p, struct lt_state *s,
 	struct lt_include *include;
 	int exists, n, escape, local, state, extends, block, output, cb;
 	char fnam[MAXPATHLEN];
-	struct luaL_Buffer body, blocks, *b;
+	struct buffer body, blocks, *b;
 
-	luaL_buffinit(L, &body);
-	luaL_buffinit(L, &blocks);
+	buf_init(&body);
+	buf_init(&blocks);
 	b = &body;
 
-	luaL_addstring(b, "_ENV = ...\n"
+	buf_addstring(b, "_ENV = ...\n"
 		    "template['");
-	luaL_addstring(b, template);
-	luaL_addstring(b, "'] = { blk = {} }\ntemplate['");
-	luaL_addstring(b, template);
-	luaL_addstring(b, "'].main = function(_ENV, _t)\n");
+	buf_addstring(b, template);
+	buf_addstring(b, "'] = { blk = {} }\ntemplate['");
+	buf_addstring(b, template);
+	buf_addstring(b, "'].main = function(_ENV, _t)\n");
 
-	luaL_addstring(&blocks, "_ENV = ...\n");
+	buf_addstring(&blocks, "_ENV = ...\n");
 
 #ifdef LT_DEBUG
 	s->tline = 0;
@@ -458,18 +459,18 @@ reader(lua_State *L, char *p, struct lt_state *s,
 		case s_initial:
 			if (strncmp(p, "<%", 2) && (!extends
 			    || (extends && block))) {
-			    	luaL_addstring(b, "print([[");
+				buf_addstring(b, "print([[");
 				output = 1;
 			}
 			state = s_output;
 			/* FALLTHROUGH */
 		case s_output:
 			if (strncmp(p, "<%", 2)) {
-				luaL_addchar(b, *p++);
+				buf_addchar(b, *p++);
 				break;
 			} else {
 				if (output) {
-					luaL_addstring(b, "]])\n");
+					buf_addstring(b, "]])\n");
 					output = 0;
 #ifdef LT_DEBUG
 					s->lline++;
@@ -500,30 +501,30 @@ reader(lua_State *L, char *p, struct lt_state *s,
 					}
 					switch (escape_temp) {
 					case e_html:
-						luaL_addstring(b, "print(escape_html(");
+						buf_addstring(b, "print(escape_html(");
 						cb += 1;
 						break;
 					case e_xml:
-						luaL_addstring(b, "print(escape_xml(");
+						buf_addstring(b, "print(escape_xml(");
 						cb += 1;
 						break;
 					case e_url:
-						luaL_addstring(b, "print(escape_url(");
+						buf_addstring(b, "print(escape_url(");
 						cb += 1;
 						break;
 					case e_latex:
-						luaL_addstring(b, "print(escape_latex(");
+						buf_addstring(b, "print(escape_latex(");
 						cb += 1;
 						break;
 					default:
-						luaL_addstring(b, "print(");
+						buf_addstring(b, "print(");
 					}
 					if (*p == '%') {	/* format */
-						luaL_addstring(b,
+						buf_addstring(b,
 						    "string.format([[");
 						while (*p && !isspace((int)*p))
-						    	luaL_addchar(b, *p++);
-						luaL_addstring(b, "]], ");
+							buf_addchar(b, *p++);
+						buf_addstring(b, "]], ");
 						cb += 1;
 					}
 				} else if (*p == '!') {	/* instr. */
@@ -540,9 +541,9 @@ reader(lua_State *L, char *p, struct lt_state *s,
 			/* FALLTHROUGH */
 		case s_code:
 			if (strncmp(p, "%>", 2))
-				luaL_addchar(b, *p++);
+				buf_addchar(b, *p++);
 			else {
-				luaL_addstring(b, "\n");
+				buf_addstring(b, "\n");
 				state = s_initial;
 				p += 2;
 #ifdef LT_DEBUG
@@ -552,12 +553,12 @@ reader(lua_State *L, char *p, struct lt_state *s,
 			break;
 		case s_expression:
 			if (strncmp(p, "%>", 2))
-				luaL_addchar(b, *p++);
+				buf_addchar(b, *p++);
 			else {
 				state = s_initial;
 				for (; cb > 0; cb--)
-					luaL_addchar(b, ')');
-				luaL_addstring(b, ")\n");
+					buf_addchar(b, ')');
+				buf_addstring(b, ")\n");
 				p += 2;
 #ifdef LT_DEBUG
 				s->lline++;
@@ -582,9 +583,9 @@ reader(lua_State *L, char *p, struct lt_state *s,
 					    && n < sizeof fnam)
 						fnam[n++] = *p++;
 				}
-				luaL_addstring(b, "render_template(_ENV, '");
-				luaL_addstring(b, fnam);
-				luaL_addstring(b, "')\n");
+				buf_addstring(b, "render_template(_ENV, '");
+				buf_addstring(b, fnam);
+				buf_addstring(b, "')\n");
 				exists = 0;
 				SLIST_FOREACH(include, includes, next)
 					if (!strcmp(include->fnam, fnam)) {
@@ -637,20 +638,20 @@ reader(lua_State *L, char *p, struct lt_state *s,
 				}
 				b = &blocks;
 				if (!extends) {
-					luaL_addstring(b, "if template['");
-					luaL_addstring(b, template);
-					luaL_addstring(b, "'].blk['");
-					luaL_addstring(b, fnam);
-					luaL_addstring(b, "'] == nil then\n");
+					buf_addstring(b, "if template['");
+					buf_addstring(b, template);
+					buf_addstring(b, "'].blk['");
+					buf_addstring(b, fnam);
+					buf_addstring(b, "'] == nil then\n");
 #ifdef LT_DEBUG
 					s->lline++;
 #endif
 				}
-				luaL_addstring(b, "template['");
-				luaL_addstring(b, template);
-				luaL_addstring(b, "'].blk['");
-				luaL_addstring(b, fnam);
-				luaL_addstring(b, "'] = function (_ENV)\n");
+				buf_addstring(b, "template['");
+				buf_addstring(b, template);
+				buf_addstring(b, "'].blk['");
+				buf_addstring(b, fnam);
+				buf_addstring(b, "'] = function (_ENV)\n");
 				block = 1;
 #ifdef LT_DEBUG
 				s->lline++;
@@ -658,7 +659,7 @@ reader(lua_State *L, char *p, struct lt_state *s,
 			} else if (!strncmp(p, "endblock", 8)) {
 				p += 8;
 				if (!extends) {
-					luaL_addstring(b, "end\n");
+					buf_addstring(b, "end\n");
 #ifdef LT_DEBUG
 					s->lline++;
 				}
@@ -666,13 +667,13 @@ reader(lua_State *L, char *p, struct lt_state *s,
 #else
 				}
 #endif
-				luaL_addstring(b, "end\n");
+				buf_addstring(b, "end\n");
 				b = &body;
 				if (!extends) {
-					luaL_addstring(b,
+					buf_addstring(b,
 					    "render_block(_ENV, _t, '");
-					luaL_addstring(b, fnam);
-					luaL_addstring(b, "')\n");
+					buf_addstring(b, fnam);
+					buf_addstring(b, "')\n");
 #ifdef LT_DEBUG
 					s->lline++;
 #endif
@@ -680,7 +681,7 @@ reader(lua_State *L, char *p, struct lt_state *s,
 				block = 0;
 			} else if (!strncmp(p, "extends", 7)) {
 				if (!extends) {
-					luaL_addstring(b, "end\n");
+					buf_addstring(b, "end\n");
 #ifdef LT_DEBUG
 					s->lline++;
 #endif
@@ -701,15 +702,15 @@ reader(lua_State *L, char *p, struct lt_state *s,
 					    && n < sizeof fnam)
 						fnam[n++] = *p++;
 				}
-				luaL_addstring(b, "template['");
-				luaL_addstring(b, template);
-				luaL_addstring(b, "'].main = nil\n");
+				buf_addstring(b, "template['");
+				buf_addstring(b, template);
+				buf_addstring(b, "'].main = nil\n");
 
-				luaL_addstring(b, "template['");
-				luaL_addstring(b, template);
-				luaL_addstring(b, "'].extends = '");
-				luaL_addstring(b, fnam);
-				luaL_addstring(b, "'\n");
+				buf_addstring(b, "template['");
+				buf_addstring(b, template);
+				buf_addstring(b, "'].extends = '");
+				buf_addstring(b, fnam);
+				buf_addstring(b, "'\n");
 				extends = 1;
 				exists = 0;
 				SLIST_FOREACH(include, includes, next)
@@ -738,7 +739,7 @@ reader(lua_State *L, char *p, struct lt_state *s,
 	}
 	if (*p == '\0') {
 		if (state == s_output && !extends) {
-			luaL_addstring(b, "]])\n");
+			buf_addstring(b, "]])\n");
 #ifdef LT_DEBUG
 			s->lline++;
 #endif
@@ -748,14 +749,18 @@ reader(lua_State *L, char *p, struct lt_state *s,
 		else
 			state = s_error;
 		if (!extends) {
-			luaL_addstring(b, "end\n");
+			buf_addstring(b, "end\n");
 #ifdef LT_DEBUG
 			s->lline++;
 #endif
 		}
 	}
-	luaL_pushresult(&blocks);
-	luaL_pushresult(&body);
+	buf_push(&blocks, L);
+	buf_push(&body, L);
+
+	buf_free(&blocks);
+	buf_free(&body);
+
 	if (print) {
 		printf("%s", lua_tostring(L, -1));
 		printf("%s", lua_tostring(L, -2));
