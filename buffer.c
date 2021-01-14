@@ -63,7 +63,7 @@ buf_addchar(struct buffer *b, char c)
 {
         if (b->size + 1 > b->capacity)
                 buf_resize(b,  1);
-        *(b->data + ++b->size) = c;
+        *(b->data + b->size++) = c;
 }
 
 void
