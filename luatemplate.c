@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2011 - 2021 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
+* Copyright (C) 2011 - 2023 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -114,7 +114,6 @@ static int
 template_context(lua_State *L)
 {
 	struct render_context *ctx;
-	int setup, print, finish;
 	struct luaL_Reg lt_escapes[] = {
 		{ "escape_html",	escape_html },
 		{ "escape_xml",		escape_xml },
@@ -163,15 +162,9 @@ static int
 render_file(lua_State *L)
 {
 	struct stat sb;
-	struct lt_include_head ihead;
-	FILE *fp = NULL;
-	struct auth *auth;
 	time_t mtime;
-	char errmsg[BUFSIZ];
 	const char *fnam;
-	int funcindex;
 	struct render_context *ctx;
-	int globals;
 
 	ctx = luaL_checkudata(L, 1, TEMPLATE_CONTEXT_METATABLE);
 	fnam = luaL_checkstring(L, 2);

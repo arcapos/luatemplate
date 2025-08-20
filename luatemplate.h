@@ -60,7 +60,7 @@ struct render_context {
 
 extern int process_file(lua_State *L, const char *fnam,
     struct lt_include_head *ihead, int print);
-extern const char *reader(lua_State *L, char *, struct lt_state *,
+extern void reader(lua_State *L, char *, struct lt_state *,
     struct lt_include_head *includes, const char *, int);
 #ifdef LT_DEBUG
 extern const char *lt_errmsg(lua_State *L);

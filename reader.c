@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2021 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
+ * Copyright (C) 2011 - 2023 Micro Systems Marc Balmer, CH-5073 Gipf-Oberfrick.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -25,6 +25,7 @@
 #include <sys/param.h>
 #include <sys/mman.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -299,8 +300,8 @@ process_file(lua_State *L, const char *fnam, struct lt_include_head *ihead,
 		return -1;
 	}
 
-	if ((buf = mmap(0, sb.st_size, PROT_READ,
-	    MAP_PRIVATE | MAP_FILE, fd, (off_t)0L)) == MAP_FAILED) {
+	if ((buf = mmap(0, sb.st_size, PROT_READ, MAP_PRIVATE, fd,
+	    (off_t)0L)) == MAP_FAILED) {
 		snprintf(errmsg, sizeof errmsg, "can't mmap %s", fnam);
 		lua_pushstring(L, errmsg);
 		close(fd);
@@ -336,7 +337,7 @@ process_file(lua_State *L, const char *fnam, struct lt_include_head *ihead,
 	}
 	lua_pushvalue(L, -4);
 	if (lua_pcall(L, 1, 0, 0))
-		printf("an error occured: %s\n", lua_tostring(L, -1));
+		printf("an error occurred: %s\n", lua_tostring(L, -1));
 	lua_pop(L, 1);
 
 	buff = lua_tolstring(L, -1, &len);
@@ -356,7 +357,7 @@ process_file(lua_State *L, const char *fnam, struct lt_include_head *ihead,
 	}
 	lua_pushvalue(L, -3);
 	if (lua_pcall(L, 1, 0, 0))
-		printf("an error occured: %s\n", lua_tostring(L, -1));
+		printf("an error occurred: %s\n", lua_tostring(L, -1));
 	lua_pop(L, 1);
 
 	munmap(buf, sb.st_size);
@@ -405,12 +406,12 @@ process_file(lua_State *L, const char *fnam, struct lt_include_head *ihead,
 	return 0;
 }
 
-const char *
+void
 reader(lua_State *L, char *p, struct lt_state *s,
     struct lt_include_head *includes, const char *template, int print)
 {
 	struct lt_include *include;
-	int exists, n, escape, local, state, extends, block, output, cb;
+	int exists, n, escape, state, extends, block, output, cb;
 	char fnam[MAXPATHLEN];
 	struct buffer body, blocks, *b;
 
